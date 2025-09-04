@@ -1,22 +1,24 @@
-# Базовый образ с Python. slim — меньше размер, быстрее скачивание.
 FROM python:3.12-slim
 
-# Создаём непривилегированного пользователя — базовая мера безопасности.
+# Создаём пользователя и рабочую директорию
 RUN useradd -m appuser
 WORKDIR /app
 
-# Устанавливаем зависимости отдельно, чтобы использовать слой кеша.
+# Ставим зависимости как root (системно) — бинарь gunicorn окажется в /usr/local/bin
 COPY docker/app/requirements.txt /app/requirements.txt
 RUN pip install --no-cache-dir -r /app/requirements.txt
 
-# Копируем исходники.
+# Копируем код
 COPY docker/app /app
 
-# Не запускаем от root.
+# Дальше работаем непривилегированным пользователем
 USER appuser
 
-ENV PORT=5000
+# На всякий случай добавим ~/.local/bin в PATH (полезно для будущих pip --user)
+ENV PATH="/home/appuser/.local/bin:${PATH}" \
+    PORT=5000
+
 EXPOSE 5000
 
-# Запускаем приложение.
-CMD ["python", "app.py"]
+# Запуск под gunicorn — стабильнее dev-сервера Flask
+CMD ["gunicorn","-w","2","--threads","4","-b","0.0.0.0:5000","app:app"]

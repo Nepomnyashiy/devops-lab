@@ -1,0 +1,46 @@
+{
+  "id": null,
+  "title": "App Overview",
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Requests /health",
+      "targets": [
+        {
+          "expr": "sum(increase(app_requests_total{endpoint=\"/health\"}[5m]))"
+        }
+      ],
+      "gridPos": {
+        "h": 6,
+        "w": 12,
+        "x": 0,
+        "y": 0
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Requests by endpoint (rate)",
+      "targets": [
+        {
+          "expr": "rate(app_requests_total[1m])"
+        }
+      ],
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 6
+      }
+    }
+  ],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-1h",
+    "to": "now"
+  }
+}
