@@ -1,0 +1,7 @@
+# ConfigMap: неконфиденциальные настройки.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  APP_ENV: "prod"

@@ -1,0 +1,19 @@
+# Ingress: маршрутизация внешнего трафика к сервисам. Требует установленного Ingress Controller.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "10m"
+spec:
+  rules:
+    - host: app.local        # замените/добавьте hosts для minikube или кластера
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: app
+                port:
+                  number: 80

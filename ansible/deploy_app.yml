@@ -1,0 +1,23 @@
+---
+# Деплой приложения через docker compose.
+- hosts: app_hosts
+  become: yes
+  vars:
+    repo_path: /opt/devops-lab
+  tasks:
+    - name: Ensure repo directory exists
+      file:
+        path: "{{ repo_path }}"
+        state: directory
+
+    - name: Copy project files (пример — в реальности используйте git pull)
+      # В проде лучше делать git checkout или скачивать релизные артефакты.
+      copy:
+        src: "{{ playbook_dir }}/../"   # относительный путь от ansible/
+        dest: "{{ repo_path }}"
+        mode: "0644"
+
+    - name: Deploy with docker compose
+      community.docker.docker_compose:
+        project_src: "{{ repo_path }}"
+        state: present

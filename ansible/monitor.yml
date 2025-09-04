@@ -1,0 +1,7 @@
+---
+# Заготовка под роль мониторинга. Можно дополнить установкой Prometheus/Grafana.
+- hosts: monitoring
+  become: yes
+  tasks:
+    - debug:
+        msg: "Тут будет настройка Prometheus и Grafana"
