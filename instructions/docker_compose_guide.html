@@ -1,0 +1,259 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Шпаргалка по Docker Compose (CLI) — команды и примеры</title>
+<style>
+  :root{
+    --bg:#f8fbff;
+    --panel:#ffffff;
+    --ink:#0a0a0a;
+    --muted:#4b5563;
+    --primary:#0b5ed7;
+    --primary-ink:#0a2e6e;
+    --border:#e5eef9;
+    --code-bg:#f5f7fa;
+    --accent:#eaf2ff;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;
+    font-family:system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,"Noto Sans",Arial;
+    background:var(--bg);
+    color:var(--ink);
+    line-height:1.6;
+  }
+  header{
+    background:linear-gradient(180deg,#ffffff, var(--accent));
+    border-bottom:1px solid var(--border);
+    padding:32px 20px;
+  }
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px;}
+  h1{margin:0 0 8px 0;font-size:28px;color:var(--primary);}
+  h2{margin-top:32px;color:var(--primary-ink);font-size:22px}
+  h3{margin-top:24px;font-size:18px}
+  p.lead{color:var(--muted);margin:8px 0 0}
+  section{background:var(--panel);border:1px solid var(--border);border-radius:12px;margin:22px 0;padding:22px}
+  code,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+  pre{
+    background:var(--code-bg);
+    border:1px solid var(--border);
+    padding:14px 16px;border-radius:10px;overflow:auto
+  }
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+  .card{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:16px}
+  .muted{color:var(--muted)}
+  .note{background:var(--accent);border:1px solid var(--border);padding:10px 12px;border-radius:10px}
+  ul{margin:10px 0 0 18px}
+  .kbd kbd{padding:2px 6px;border:1px solid var(--border);border-bottom-width:2px;border-radius:6px;background:#fff}
+  footer{color:var(--muted);font-size:13px;padding:24px 0 40px}
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <h1>Шпаргалка по Docker Compose (CLI)</h1>
+    <p class="lead">Самые нужные команды для терминала: создание, запуск, проверка, остановка и очистка. Плюс типовой <code>docker-compose.yml</code> с пояснениями.</p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section id="intro">
+    <h2>Быстрый старт</h2>
+    <div class="note">
+      В новых версиях используется команда <strong><code>docker compose</code></strong> (через пробел). 
+      В старых — <strong><code>docker-compose</code></strong>. Команды ниже показаны в современном варианте.
+    </div>
+    <pre><code>docker --version
+docker compose version</code></pre>
+  </section>
+
+  <section id="cheatsheet">
+    <h2>Команды: самое нужное</h2>
+    <div class="grid">
+      <div class="card">
+        <h3>Запуск</h3>
+        <pre><code>docker compose up -d --build</code></pre>
+        <p class="muted">Собрать образы (если нужно) и запустить в фоне.</p>
+        <pre><code>docker compose up --remove-orphans</code></pre>
+        <p class="muted">Удалить осиротевшие контейнеры старых сервисов.</p>
+      </div>
+      <div class="card">
+        <h3>Остановка и удаление</h3>
+        <pre><code>docker compose stop</code></pre>
+        <p class="muted">Остановить контейнеры, но не удалять.</p>
+        <pre><code>docker compose down</code></pre>
+        <p class="muted">Остановить и удалить контейнеры, сети.</p>
+        <pre><code>docker compose down -v</code></pre>
+        <p class="muted">Плюс удалить анонимные тома (данные БД исчезнут).</p>
+      </div>
+      <div class="card">
+        <h3>Статус и диагностика</h3>
+        <pre><code>docker compose ps</code></pre>
+        <p class="muted">Список контейнеров проекта.</p>
+        <pre><code>docker compose logs -f</code></pre>
+        <p class="muted">Журналы в реальном времени (как tail -f).</p>
+        <pre><code>docker compose top</code></pre>
+        <p class="muted">Процессы внутри контейнеров.</p>
+      </div>
+      <div class="card">
+        <h3>Взаимодействие</h3>
+        <pre><code>docker compose exec app sh</code></pre>
+        <p class="muted">Зайти в работающий контейнер сервиса <code>app</code>.</p>
+        <pre><code>docker compose run --rm app bash</code></pre>
+        <p class="muted">Одноразовый контейнер для выполнения команды.</p>
+        <pre><code>docker compose cp app:/path/file ./file</code></pre>
+        <p class="muted">Скопировать файл из контейнера.</p>
+      </div>
+      <div class="card">
+        <h3>Сборка и образы</h3>
+        <pre><code>docker compose build</code></pre>
+        <p class="muted">Собрать образы без запуска.</p>
+        <pre><code>docker compose images</code></pre>
+        <p class="muted">Показать образы, используемые проектом.</p>
+        <pre><code>docker image prune</code></pre>
+        <p class="muted">Удалить висячие образы (без контейнеров).</p>
+      </div>
+      <div class="card">
+        <h3>Масштабирование и перезапуск</h3>
+        <pre><code>docker compose up -d --scale app=3</code></pre>
+        <p class="muted">Поднять несколько экземпляров сервиса <code>app</code>.</p>
+        <pre><code>docker compose restart app</code></pre>
+        <p class="muted">Перезапуск конкретного сервиса.</p>
+      </div>
+      <div class="card">
+        <h3>Конфигурация</h3>
+        <pre><code>docker compose config</code></pre>
+        <p class="muted">Показать итоговую конфигурацию (со всеми overrides).</p>
+        <pre><code>docker compose -f docker-compose.yml -f docker-compose.override.yml up -d</code></pre>
+        <p class="muted">Использовать несколько файлов конфигурации.</p>
+      </div>
+      <div class="card">
+        <h3>Полезно знать</h3>
+        <ul class="muted">
+          <li><code>.env</code> в корне автоматически подхватывается в конфигурации.</li>
+          <li>Секреты/пароли лучше хранить как переменные окружения или в отдельных файлах.</li>
+          <li>Для очистки всего: <code>docker system prune -a</code> (осторожно!).</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="yaml">
+    <h2>Стандартный docker-compose.yml с пояснениями</h2>
+    <pre><code>version: "3.9"  # В Docker Compose V2 можно опустить, но для совместимости оставим.
+
+services:
+  app:                               # Имя сервиса (будет частью имён контейнеров)
+    build:                           # Сборка образа из Dockerfile
+      context: .                     # Каталог контекста
+      dockerfile: docker/app/Dockerfile
+    image: myorg/app:latest          # Тег собранного образа (опционально)
+    container_name: app              # Явное имя контейнера (опционально)
+    ports:
+      - "8000:8000"                  # Публикация порта: host:container
+    environment:                     # Переменные окружения
+      APP_ENV: "prod"
+      DATABASE_URL: "postgresql://app:secret@db:5432/appdb"
+    env_file:                        # Подгрузка переменных из файла
+      - .env
+    volumes:
+      - app-data:/var/app/data       # Именованный том (для сохранения данных)
+      - ./logs:/var/log/app          # Проекция локальной папки внутрь контейнера
+    depends_on:                      # Порядок запуска и условие готовности
+      db:
+        condition: service_healthy
+    healthcheck:                     # Проверка здоровья контейнера
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 20s
+    restart: unless-stopped          # Политика перезапуска
+    networks:
+      - app-net
+
+  db:
+    image: postgres:15
+    container_name: db
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: appdb
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    networks:
+      - app-net
+
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - app
+    networks:
+      - app-net
+
+volumes:                              # Определение именованных томов
+  app-data:
+  db-data:
+
+networks:                             # Определение сети проекта
+  app-net:
+    driver: bridge</code></pre>
+
+    <h3>Пояснения к ключам</h3>
+    <ul>
+      <li><code>services</code> — список контейнеров (сервисов), которые запускаются вместе.</li>
+      <li><code>build</code>/<code>image</code> — собрать образ из Dockerfile или использовать готовый.</li>
+      <li><code>ports</code> — публикация портов из контейнера на хост.</li>
+      <li><code>environment</code>/<code>env_file</code> — переменные окружения в явном виде и из файлов.</li>
+      <li><code>volumes</code> — постоянные данные (тома) и монтирование локальных папок.</li>
+      <li><code>depends_on</code> — порядок запуска; с условием <code>service_healthy</code> ждёт healthcheck зависимого сервиса.</li>
+      <li><code>healthcheck</code> — критерии «здоровья» контейнера, полезно для оркестрации и автоматического рестарта.</li>
+      <li><code>restart</code> — политика перезапуска контейнера.</li>
+      <li><code>networks</code> — изоляция и общение сервисов внутри проекта.</li>
+    </ul>
+
+    <h3>Пример .env</h3>
+    <pre><code># .env (лежит рядом с docker-compose.yml)
+APP_ENV=prod
+POSTGRES_PASSWORD=secret
+LOG_LEVEL=info</code></pre>
+  </section>
+
+  <section id="tips">
+    <h2>Практические советы</h2>
+    <ul>
+      <li>Храните секреты вне репозитория (переменные окружения, vault, менеджеры секретов).</li>
+      <li>Используйте <code>docker compose config</code> перед запуском, чтобы увидеть итоговую конфигурацию.</li>
+      <li>Для профилей окружений используйте несколько файлов:
+        <pre><code>docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d</code></pre>
+      </li>
+      <li>Регулярно чистите неиспользуемые ресурсы:
+        <pre><code>docker system prune -a
+docker volume prune
+docker network prune</code></pre>
+      </li>
+    </ul>
+  </section>
+
+  <footer class="wrap">
+    <p>Подготовлено как краткая инструкция по работе с Docker Compose в терминале.</p>
+  </footer>
+</main>
+</body>
+</html>
