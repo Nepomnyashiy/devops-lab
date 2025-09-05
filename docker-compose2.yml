@@ -1,44 +1,40 @@
-version: "3.9"
-
 services:
-  # --- PostgreSQL ---
   db:
     image: postgres:15
-    container_name: devops-lab-db-1
     environment:
       POSTGRES_DB: appdb
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
-    volumes:
-      - dbdata:/var/lib/postgresql/data
-      - ./docker/db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres} -d $${POSTGRES_DB:-appdb}"]
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 5s
       timeout: 3s
       retries: 20
+    volumes:
+      - dbdata:/var/lib/postgresql/data
     networks: [appnet]
 
-  # --- Приложение (Flask + gunicorn + метрики) ---
   app:
     build:
       context: .
       dockerfile: docker/app/Dockerfile
-    container_name: devops-lab-app-1
     environment:
       APP_ENV: "dev"
       PORT: "5000"
-      DATABASE_URL: "postgresql://postgres:postgres@db:5432/appdb"
+    networks: [appnet]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
     depends_on:
       db:
         condition: service_healthy
-    restart: unless-stopped
-    networks: [appnet]
 
-  # --- Nginx (reverse proxy на app) ---
   nginx:
     image: nginx:1.27-alpine
-    container_name: devops-lab-nginx-1
     ports:
       - "8000:80"
     volumes:
@@ -47,20 +43,17 @@ services:
       - app
     networks: [appnet]
 
-  # --- Prometheus ---
+  # --- Monitoring stack ---
   prometheus:
     image: prom/prometheus:v2.54.1
-    container_name: devops-lab-prometheus-1
     ports:
       - "9090:9090"
     volumes:
       - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
     networks: [appnet]
 
-  # --- Grafana ---
   grafana:
     image: grafana/grafana:11.0.0
-    container_name: devops-lab-grafana-1
     ports:
       - "3000:3000"
     environment:
@@ -75,10 +68,8 @@ services:
       - loki
     networks: [appnet]
 
-  # --- Loki (логи) ---
   loki:
     image: grafana/loki:2.9.8
-    container_name: devops-lab-loki-1
     ports:
       - "3100:3100"
     command: -config.file=/etc/loki/loki-config.yml
@@ -86,20 +77,16 @@ services:
       - ./monitoring/loki-config.yml:/etc/loki/loki-config.yml:ro
     networks: [appnet]
 
-  # --- Promtail (сборщик логов Docker в Loki) ---
   promtail:
     image: grafana/promtail:2.9.8
-    container_name: devops-lab-promtail-1
     command: -config.file=/etc/promtail/config.yml
     volumes:
       - ./monitoring/promtail-config.yml:/etc/promtail/config.yml:ro
       - /var/lib/docker/containers:/var/lib/docker/containers:ro
     networks: [appnet]
 
-  # --- cAdvisor (метрики контейнеров) ---
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.49.1
-    container_name: devops-lab-cadvisor-1
     ports:
       - "8080:8080"
     volumes:
@@ -109,31 +96,8 @@ services:
       - /var/lib/docker/:/var/lib/docker:ro
     networks: [appnet]
 
-  # --- pgAdmin (WEB UI к Postgres) ---
-  pgadmin:
-    image: dpage/pgadmin4:8.12
-    container_name: pgadmin
-    depends_on:
-      db:
-        condition: service_healthy
-    environment:
-      PGADMIN_DEFAULT_EMAIL: admin@example.com   # <<< замени
-      PGADMIN_DEFAULT_PASSWORD: admin123         # <<< замени
-      PGADMIN_CONFIG_SERVER_MODE: "False"
-    ports:
-      - "5050:80"                                # http://localhost:5050
-    volumes:
-      - pgadmin-data:/var/lib/pgadmin
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost/misc/ping >/dev/null 2>&1 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-    networks: [appnet]
-
 volumes:
   dbdata:
-  pgadmin-data:
 
 networks:
   appnet:
