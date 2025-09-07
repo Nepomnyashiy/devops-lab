@@ -131,6 +131,15 @@ services:
       retries: 10
     networks: [appnet]
 
+  # --- UI тестироавния нагрузок на БД ---
+  ui:
+    build: ./docker/ui
+    container_name: devops-lab-ui-1
+    depends_on:
+      - app
+    networks:
+      - appnet
+
 volumes:
   dbdata:
   pgadmin-data:
