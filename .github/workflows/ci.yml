@@ -35,10 +35,11 @@ jobs:
       - name: Build & start stack (db, app, nginx)
         run: |
           docker compose up -d --build db app nginx
+          docker compose ps
 
-      - name: Wait for Postgres and ensure schema
+      - name: Wait Postgres and ensure schema
         run: |
-          for i in {1..30}; do
+          for i in {1..60}; do
             docker compose exec -T db pg_isready -U postgres -d appdb && break
             sleep 2
           done
@@ -49,24 +50,43 @@ jobs:
               created_at TIMESTAMP DEFAULT NOW()
             );"
 
-      - name: Wait for backend (/health)
+      - name: Wait from inside nginx container
         run: |
+          for i in {1..30}; do
+            docker compose ps nginx | grep -q "Up" && break
+            sleep 2
+          done
           for i in {1..60}; do
+            if docker compose exec -T nginx sh -lc "wget -qO- http://localhost/health >/dev/null"; then
+              echo 'nginx -> app /health OK'
+              exit 0
+            fi
+            sleep 2
+          done
+          echo 'nginx cannot reach app /health' >&2
+          docker compose logs --no-log-prefix nginx || true
+          docker compose logs --no-log-prefix app || true
+          exit 1
+
+      - name: Check from runner via published port
+        run: |
+          for i in {1..30}; do
             curl -fsS ${BASE_URL}/health && exit 0
             sleep 2
           done
-          echo 'Backend not ready' >&2
+          echo "Runner can't reach ${BASE_URL}/health" >&2
           docker compose ps
           exit 1
 
       - name: Run integration tests
         run: python scripts/test_app.py
 
-      - name: Show container logs on failure
+      - name: Logs on failure
         if: failure()
         run: |
-          docker compose logs --no-log-prefix app || true
+          docker compose ps
           docker compose logs --no-log-prefix nginx || true
+          docker compose logs --no-log-prefix app || true
           docker compose logs --no-log-prefix db || true
 
       - name: Tear down
