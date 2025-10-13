@@ -9,7 +9,7 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     env:
       BASE_URL: http://localhost:8000
@@ -32,9 +32,9 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build & start stack (db, app, nginx)
+      - name: Build & start stack (db, app, nginx, ui)
         run: |
-          docker compose up -d --build db app nginx
+          docker compose up -d --build db app nginx ui
           docker compose ps
 
       - name: Wait Postgres and ensure schema
@@ -50,7 +50,7 @@ jobs:
               created_at TIMESTAMP DEFAULT NOW()
             );"
 
-      - name: Wait from inside nginx container
+      - name: Wait from inside nginx container (app /health)
         run: |
           for i in {1..30}; do
             docker compose ps nginx | grep -q "Up" && break
@@ -67,6 +67,18 @@ jobs:
           docker compose logs --no-log-prefix nginx || true
           docker compose logs --no-log-prefix app || true
           exit 1
+
+      - name: Check UI through nginx (optional)
+        run: |
+          for i in {1..30}; do
+            if curl -fsS ${BASE_URL}/ui/ >/dev/null; then
+              echo "UI reachable at ${BASE_URL}/ui/"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "UI not reachable at ${BASE_URL}/ui/ (will not fail CI)"
+          exit 0
 
       - name: Check from runner via published port
         run: |
@@ -88,6 +100,7 @@ jobs:
           docker compose logs --no-log-prefix nginx || true
           docker compose logs --no-log-prefix app || true
           docker compose logs --no-log-prefix db || true
+          docker compose logs --no-log-prefix ui || true
 
       - name: Tear down
         if: always()
