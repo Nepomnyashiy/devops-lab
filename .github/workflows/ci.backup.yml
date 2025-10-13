@@ -1,0 +1,36 @@
+# Пример workflow: билд Docker-образа и публикация в GitHub Container Registry (GHCR).
+# Почему GHCR: удобен для приватных/публичных образов, нативно связан с GitHub.
+name: ci
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "docker/app/**"
+      - ".github/workflows/**"
+      - "docker-compose.yml"
+  pull_request:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write   # разрешаем пушить в GHCR
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build image
+        run: |
+          docker build -f docker/app/Dockerfile -t ghcr.io/${{ github.repository_owner }}/devops-lab-app:latest .
+
+      - name: Push image
+        run: docker push ghcr.io/${{ github.repository_owner }}/devops-lab-app:latest
