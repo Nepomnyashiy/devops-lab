@@ -1,117 +1,143 @@
-# DevOps Lab
+# DevOps-Lab — система диагностики и наблюдения за приложениями
 
-Минимальный стенд для демонстрации навыков DevOps: контейнеризация, CI/CD, IaC и базовый деплой.
+**DevOps-Lab** — проект, демонстрирующий полный цикл DevOps-подхода: от контейнеризации и CI/CD до мониторинга и тестирования.
+Система предназначена для **диагностики и анализа состояния серверных приложений и инфраструктуры**.
 
-## Быстрый старт (Docker Compose)
-```bash
-docker compose up -d --build
+Она собирает и отображает технические параметры работы сервисов:
+
+* производительность приложений и баз данных;
+* загрузку ресурсов (CPU, RAM, диски, сеть);
+* активность контейнеров и процессов;
+* ошибки, логи и системные события.
+
+Архитектура построена на микросервисном принципе — каждый компонент выполняет свою задачу:
+`backend` (Flask) обрабатывает данные, `nginx` обеспечивает маршрутизацию, `PostgreSQL` хранит информацию,
+а `frontend (UI)` предоставляет удобный веб-интерфейс для запуска тестов и визуализации результатов.
+Дополнительно интегрирован модуль тестирования и нагрузочных сценариев для проверки стабильности базы данных и API.
+
+**Цель проекта** — показать, как с помощью современных DevOps-инструментов можно организовать:
+
+* автоматическую сборку, развертывание и тестирование приложений;
+* централизованное наблюдение за состоянием системы;
+* анализ производительности и отказоустойчивости сервисов.
+
+---
+
+## Архитектура проекта
+
+```text
+┌──────────────────────────────┐
+│            UI                │
+│ (React / Tailwind)           │
+└──────────────┬───────────────┘
+               │
+┌──────────────▼───────────────┐
+│           NGINX              │
+│ (reverse proxy + routing)    │
+└──────────────┬───────────────┘
+               │
+┌──────────────▼───────────────┐
+│            APP               │
+│ (Flask backend + API)        │
+└──────────────┬───────────────┘
+               │
+┌──────────────▼───────────────┐
+│            DB                │
+│ (PostgreSQL)                 │
+└──────────────┬───────────────┘
+               │
+┌──────────────▼───────────────┐
+│  Prometheus + Grafana + Loki │
+│ (Monitoring & Logs)          │
+└──────────────────────────────┘
 ```
-После запуска:
-- API: http://localhost:8000/health (ожидается `{"status":"ok"}`)
-- Nginx проксирует на приложение (демонстрация reverse-proxy).
-
-## Состав
-- `docker/` — Dockerfile и конфиги.
-- `docker-compose.yml` — запуск сервиса, БД и Nginx.
-- `k8s/` — пример манифестов для Kubernetes (деплой, сервис, ингресс).
-- `cicd/` — GitHub Actions workflow для сборки и публикации образа.
-- `ansible/` — плейбуки для установки Docker и деплоя.
-- `scripts/` — утилиты (бэкап, очистка логов, healthcheck).
-
-Все файлы снабжены комментариями «почему именно так». Это важная часть демонстрации решений.
-
-# DevOps Lab
-
-Учебный проект, демонстрирующий навыки DevOps-инженера: контейнеризация, CI/CD, инфраструктура как код, мониторинг и автоматизация.
 
 ---
 
-## Цели проекта
-- Показать практический опыт работы с Docker, Kubernetes, Ansible, CI/CD, Prometheus, Grafana, Loki.
-- Создать демонстрационный стенд, который можно развернуть локально или в облаке.
-- Продемонстрировать умение строить инфраструктуру как код (IaC).
+## Используемые технологии
 
----
-
-## Технологии
-- Контейнеризация и оркестрация: Docker, Docker Compose, Kubernetes
-- CI/CD: GitHub Actions, GitLab CI/CD
-- IaC: Ansible
-- Мониторинг и логирование: Prometheus, Grafana, Loki, Promtail
-- Языки: Python, Bash
-- Базы данных: PostgreSQL
-- Сетевые сервисы: Nginx (reverse proxy)
+| Категория       | Инструменты                                   |
+| --------------- | --------------------------------------------- |
+| Контейнеризация | Docker, Docker Compose                        |
+| CI/CD           | GitHub Actions                                |
+| Backend         | Python, Flask                                 |
+| Frontend        | React, TypeScript, Tailwind CSS               |
+| База данных     | PostgreSQL                                    |
+| Веб-сервер      | Nginx                                         |
+| Мониторинг      | Prometheus, Grafana, Loki, Promtail, cAdvisor |
+| Автоматизация   | Bash, Python (requests, SQLAlchemy)           |
 
 ---
 
 ## Структура репозитория
-```
+
+```text
 devops-lab/
-│── README.md              # Описание проекта
-│── docker/                # Dockerfile и образы
-│   ├── app/               # Пример Python-сервиса
-│   ├── db/                # PostgreSQL с init-скриптами
-│   └── nginx/             # Nginx reverse-proxy
-│── k8s/                   # Kubernetes манифесты
-│   ├── deployment.yaml
-│   ├── service.yaml
-│   ├── ingress.yaml
-│   └── configmap-secret.yaml
-│── ansible/               # Playbooks для серверов
-│   ├── install_docker.yml
-│   ├── deploy_app.yml
-│   └── monitor.yml
-│── cicd/                  # CI/CD pipeline
-│   ├── github-actions.yml
-│   └── gitlab-ci.yml
-│── monitoring/            # Prometheus + Grafana + Loki
-│   ├── prometheus.yml
-│   ├── grafana-dashboards/
-│   └── loki-config.yml
-│── scripts/               # Bash и Python для автоматизации
-│   ├── backup.sh
-│   ├── cleanup_logs.sh
-│   └── healthcheck.py
+├── docker/                 # Dockerfile'ы и конфигурации
+├── ui/                     # Исходный код фронтенда (React)
+├── scripts/                # Python-скрипты для тестирования и утилиты
+├── monitoring/             # Конфиги Prometheus, Grafana и Loki
+├── .github/workflows/      # CI/CD pipeline (GitHub Actions)
+├── docker-compose.yml      # Основной файл Docker Compose
+└── README.md               # Документация проекта
 ```
 
 ---
 
-## Быстрый старт
-### Запуск с Docker Compose
+## Запуск проекта
+
 ```bash
-git clone https://github.com/username/devops-lab.git
+git clone https://github.com/Nepomnyashiy/devops-lab.git
 cd devops-lab
-docker-compose up -d
+docker compose up -d --build
 ```
 
-### Деплой в Kubernetes
+После успешного запуска:
+
+* Приложение доступно по адресу: **[http://localhost:8000](http://localhost:8000)**
+* Веб-интерфейс (UI): **[http://localhost:3000](http://localhost:3000)**
+* Панель мониторинга Grafana: **[http://localhost:3000](http://localhost:3000)** (если настроена)
+
+---
+
+## Тестирование системы
+
+В репозитории есть скрипт `scripts/test_app.py`, который выполняет автоматическую проверку доступности сервисов и корректности API.
+
+Пример запуска:
+
 ```bash
-kubectl apply -f k8s/
+cd scripts
+python3 test_app.py
 ```
 
-### Ansible
-```bash
-ansible-playbook ansible/install_docker.yml
-ansible-playbook ansible/deploy_app.yml
+Скрипт выполняет:
+
+* проверку импортов Python-модулей (flask, requests, psycopg2, sqlalchemy);
+* тесты API `/health`, `/env`, `/metrics`, `/items`;
+* эмуляцию POST-запроса и чтение данных из БД.
+
+Пример вывода:
+
+```
+[OK] /health
+[OK] /metrics
+[OK] POST /items
+Все проверки пройдены успешно
 ```
 
 ---
 
-## Мониторинг
-- Prometheus собирает метрики (CPU, RAM, network).
-- Grafana визуализирует дашборды.
-- Loki + Promtail собирают логи.
+## Мониторинг и безопасность
 
-Примеры дашбордов находятся в папке `monitoring/grafana-dashboards`.
-
----
-
-## Автоматизация
-- `scripts/backup.sh` — резервное копирование PostgreSQL.
-- `scripts/cleanup_logs.sh` — очистка старых логов.
-- `scripts/healthcheck.py` — проверка доступности API.
+Система включает встроенный модуль мониторинга и базовые средства обеспечения безопасности.
+Мониторинг позволяет отслеживать состояние контейнеров, сервисов и базы данных.
+Компоненты взаимодействуют через защищённые соединения, а доступ к данным ограничен ролями и учетными записями.
 
 ---
 
-## Лицензия
-MIT License
+## Автор проекта
+
+**Сергей Анатольевич Непомнящий**
+GitHub: [Nepomnyashiy](https://github.com/Nepomnyashiy)
+
